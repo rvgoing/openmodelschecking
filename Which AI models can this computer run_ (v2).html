@@ -1,0 +1,1485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Which AI models can this computer run? (v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+<style>
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --sunk:#F4F6F9; --ink:#16202C; --ink-2:#435064; --ink-3:#6B7688; --line:#D5DBE3;
+  --fast:#2A50D2; --fast-soft:#D9E1FA; --slow:#A8730A; --slow-soft:#F2E3BE; --over:#BE3826; --over-soft:#F6D8D1;
+  --ok:#1E7650; --ok-soft:#D3ECDF; --hatch:rgba(22,32,44,.09);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111720; --surface:#19212C; --sunk:#141B24; --ink:#E4E9F0; --ink-2:#ADB6C3; --ink-3:#838D9C; --line:#2A3441;
+    --fast:#7B96F7; --fast-soft:#24315A; --slow:#E1AB40; --slow-soft:#413416; --over:#F27C67; --over-soft:#4A231C;
+    --ok:#55C894; --ok-soft:#173A2A; --hatch:rgba(228,233,240,.07);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111720; --surface:#19212C; --sunk:#141B24; --ink:#E4E9F0; --ink-2:#ADB6C3; --ink-3:#838D9C; --line:#2A3441;
+  --fast:#7B96F7; --fast-soft:#24315A; --slow:#E1AB40; --slow-soft:#413416; --over:#F27C67; --over-soft:#4A231C;
+  --ok:#55C894; --ok-soft:#173A2A; --hatch:rgba(228,233,240,.07);
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none !important}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI','Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  font-size:16px;line-height:1.5;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:44px 20px 72px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--fast);outline-offset:2px}
+
+/* Header */
+.top h1{font-stretch:118%;font-weight:760;font-size:clamp(30px,4.8vw,52px);line-height:1.03;letter-spacing:-.015em;margin:0 0 14px;max-width:17ch}
+.top p{margin:0;color:var(--ink-2);font-size:17px;max-width:62ch}
+
+/* Hero */
+.hero{margin-top:34px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 28px 24px}
+.verdict{font-stretch:106%;font-weight:680;font-size:clamp(21px,2.7vw,29px);line-height:1.22;margin:0 0 6px;max-width:34ch}
+.verdict-sub{margin:0 0 20px;color:var(--ink-2);max-width:62ch}
+.notice{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;background:var(--slow-soft);border-radius:10px;padding:10px 14px;margin:0 0 22px;font-size:15px}
+.notice span{flex:1 1 280px}
+.meter,.m-bar{position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,var(--hatch) 0 5px,transparent 5px 10px),var(--sunk)}
+.meter{height:54px;border-radius:10px}
+.zone{position:absolute;top:0;bottom:0}
+.zf{background:var(--fast-soft)}
+.zs{background:var(--slow-soft);box-shadow:inset 2px 0 0 var(--surface)}
+.fill{position:absolute;top:6px;bottom:6px}
+.meter .fill{top:13px;bottom:13px}
+.f-fast{background:var(--fast)}
+.f-slow{background:var(--slow)}
+.f-over{background:var(--over)}
+.clip{position:absolute;right:0;top:0;bottom:0;width:8px;background:var(--over);clip-path:polygon(0 0,100% 50%,0 100%)}
+.ticks{position:relative;height:20px;margin-top:6px;font-size:12px;color:var(--ink-3)}
+.ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.ticks span:first-child{transform:none}
+.legend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px;color:var(--ink-2)}
+.legend li{display:flex;align-items:center;gap:8px}
+.sw{width:14px;height:14px;border-radius:3px;flex:none}
+.sw.zf{background:var(--fast-soft);box-shadow:inset 0 0 0 1px var(--fast)}
+.sw.zs{background:var(--slow-soft);box-shadow:inset 0 0 0 1px var(--slow)}
+.sw.need{background:var(--fast)}
+.sw.need.s{background:var(--slow)}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);margin:22px 0 0;border-top:1px solid var(--line)}
+.facts div{padding:14px 16px 0 0;min-width:0}
+.facts div+div{padding-left:16px;border-left:1px solid var(--line)}
+.facts dt{font-size:13px;font-weight:600;color:var(--ink-3)}
+.facts dd{margin:3px 0 0;font-weight:620}
+.setup{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);color:var(--ink-2);max-width:78ch}
+.setup b{color:var(--ink);font-weight:650}
+
+/* Panels */
+.panels{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;margin-top:20px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px}
+.panel h2{font-size:20px;font-stretch:108%;font-weight:720;margin:0 0 4px}
+.hint{margin:0 0 18px;color:var(--ink-3);font-size:14.5px}
+.field{display:grid;gap:6px;margin-bottom:15px;min-width:0}
+.field>label,.flabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;font-weight:620;color:var(--ink-2)}
+.field small{font-size:13px;color:var(--ink-3)}
+input[type=number],input[type=text],input:not([type]),select,textarea{
+  width:100%;min-width:0;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:15px
+}
+select{appearance:auto}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk)}
+.seg button{border:0;background:transparent;padding:9px 8px;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;line-height:1.25}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.src{font-size:12px;font-weight:620;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.src.detected,.src.script{background:var(--ok-soft);color:var(--ok)}
+.src.lookup{background:var(--fast-soft);color:var(--fast)}
+.src.assumed,.src.unknown{background:var(--slow-soft);color:var(--slow)}
+.src.edited{background:var(--sunk);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
+input[type=range]{width:100%;accent-color:var(--fast)}
+output{font-weight:700;color:var(--ink)}
+.seen{margin:20px 0 0;padding-top:16px;border-top:1px solid var(--line)}
+.seen h3{font-size:15px;font-weight:700;margin:0 0 8px}
+.seen dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.seen dt{color:var(--ink-3)}
+.seen dd{margin:0;color:var(--ink-2);overflow-wrap:anywhere}
+.note{font-size:14px;color:var(--ink-2);background:var(--sunk);border-radius:8px;padding:8px 12px;margin:10px 0 0}
+
+/* Exact numbers */
+.exact{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.exact summary{cursor:pointer;list-style:none;padding:18px 22px;display:flex;gap:14px;justify-content:space-between;align-items:center}
+.exact summary::-webkit-details-marker{display:none}
+.exact summary b{font-size:19px;font-stretch:108%;font-weight:720;display:block}
+.exact summary span{color:var(--ink-3);font-size:14.5px}
+.exact summary::after{content:"+";font-size:26px;line-height:1;color:var(--ink-3);flex:none}
+.exact[open] summary::after{content:"\2013"}
+.exact-body{padding:0 22px 22px}
+.exact-body p{margin:0 0 12px;color:var(--ink-2);max-width:72ch}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.tab{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+pre,textarea{font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;font-size:12.5px;line-height:1.55}
+pre{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;max-height:320px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 18px}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--surface);border-radius:8px;padding:8px 16px;font-size:15px;font-weight:650;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--ink);border-color:var(--line)}
+.status{font-size:14px;color:var(--ink-2)}
+.status.bad{color:var(--over)}
+textarea{resize:vertical;min-height:110px}
+
+/* Models */
+.models{margin-top:40px}
+.models-head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
+.models-head h2{font-size:clamp(23px,2.8vw,30px);font-stretch:114%;font-weight:750;margin:0;line-height:1.1}
+.models-head p{margin:6px 0 0;color:var(--ink-2);max-width:60ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.listbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:6px 22px 10px}
+.list-tools{display:flex;flex-wrap:wrap;gap:8px 22px;justify-content:space-between;align-items:center;padding:12px 0}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink-2);cursor:pointer}
+.toggle input{accent-color:var(--fast);width:16px;height:16px}
+.cols,.m{display:grid;grid-template-columns:minmax(190px,1.25fr) minmax(140px,2fr) 74px 112px 100px;gap:6px 18px;align-items:center}
+.cols{font-size:13px;font-weight:600;color:var(--ink-3);padding:6px 0;border-top:1px solid var(--line)}
+.cols span:nth-child(2){grid-column:span 2}
+#list{list-style:none;margin:0;padding:0}
+.m{padding:13px 0;border-top:1px solid var(--line)}
+.m-btn{all:unset;cursor:pointer;display:block;border-radius:4px}
+.m-btn:focus-visible{outline:2px solid var(--fast);outline-offset:3px}
+.m-btn .nm{display:block;font-weight:680;font-stretch:104%;font-size:16px}
+.m-btn .nm::after{content:"+";margin-left:8px;color:var(--ink-3);font-weight:400}
+.m-btn[aria-expanded="true"] .nm::after{content:"\2013"}
+.m-btn .sz{display:block;font-size:13.5px;color:var(--ink-3)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.tag{font-size:12px;color:var(--ink-2);background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.m-bar{height:24px;border-radius:6px}
+.m-need{font-weight:620;text-align:right;white-space:nowrap}
+.m-speed{font-weight:650;white-space:nowrap}
+.m-speed small{font-weight:500;color:var(--ink-3);font-size:13px}
+.m-speed .where{display:block;font-weight:500;font-size:12.5px;color:var(--ink-3)}
+.dash{color:var(--ink-3);font-weight:400}
+.pill{display:inline-block;font-size:13px;font-weight:650;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.p-great{background:var(--ok-soft);color:var(--ok)}
+.p-good{background:var(--fast-soft);color:var(--fast)}
+.p-slow{background:var(--slow-soft);color:var(--slow)}
+.p-crawl{background:var(--over-soft);color:var(--over)}
+.p-nofit{color:var(--ink-3);box-shadow:inset 0 0 0 1px var(--line)}
+.v-nofit .nm{color:var(--ink-2)}
+.m-detail{grid-column:1/-1;background:var(--sunk);border-radius:10px;padding:12px 16px;font-size:14.5px;color:var(--ink-2)}
+.m-detail p{margin:0 0 6px;max-width:80ch}
+.m-detail p:last-child{margin-bottom:0}
+.m-detail b{color:var(--ink);font-weight:650}
+.m-detail .warn{color:var(--over)}
+.empty{padding:18px 0;color:var(--ink-2);border-top:1px solid var(--line)}
+.add{border-top:1px solid var(--line);padding:16px 0 8px}
+.add h3{font-size:15px;font-weight:700;margin:0 0 4px}
+.add p{margin:0 0 10px;font-size:14px;color:var(--ink-3)}
+.add form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}
+.add label{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--ink-2)}
+
+/* Recommendations and size/compression matrix */
+.picks{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 24px 20px}
+.sec-head h2{font-size:clamp(22px,2.6vw,28px);font-stretch:112%;font-weight:750;margin:0;line-height:1.1}
+.sec-head p{margin:6px 0 0;color:var(--ink-2);max-width:66ch}
+.pick-list{list-style:none;margin:14px 0 0;padding:0}
+.pick{display:grid;grid-template-columns:minmax(230px,1.7fr) 92px 112px minmax(140px,1fr);gap:8px 20px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.pick .role{display:block;font-size:13.5px;font-weight:650;color:var(--fast)}
+.pick .pname{display:block;font-weight:700;font-stretch:106%;font-size:17px;line-height:1.25}
+.pick .pq{font-weight:500;color:var(--ink-2)}
+.pick.lead .pname{font-size:22px}
+.pick .why{margin:3px 0 0;font-size:14px;color:var(--ink-2);max-width:56ch}
+.pick .k{display:block;font-size:12.5px;color:var(--ink-3);font-weight:600}
+.pick .val{font-weight:650}
+.pick .val small{font-weight:500;color:var(--ink-3)}
+.pick.whatif{border-top-style:dashed}
+.pick.whatif .role{color:var(--slow)}
+.pick.none{display:block;color:var(--ink-2)}
+.qmeter{display:grid;gap:3px}
+.qbar{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.qbar i{display:block;height:100%;background:var(--ink-2);border-radius:3px}
+.matrix-wrap{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.matrix-wrap h3{font-size:18px;font-stretch:106%;font-weight:720;margin:0 0 4px}
+.matrix-guide{margin:0 0 12px;color:var(--ink-2);max-width:72ch}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.matrix{border-collapse:separate;border-spacing:6px;width:100%;min-width:640px;margin:0}
+.matrix thead th{font-weight:500;text-align:left;vertical-align:bottom;font-size:12.5px;color:var(--ink-3);padding:0 4px 2px}
+.matrix thead th b{display:block;color:var(--ink);font-size:14px;font-weight:700}
+.matrix tbody th{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;padding:0 10px 0 0;min-width:150px;font-weight:500}
+.matrix .rn{display:block;font-weight:680;font-size:15px;color:var(--ink)}
+.matrix .rs{display:block;font-size:12.5px;color:var(--ink-3)}
+.cell{border-radius:10px;padding:9px 11px 10px;vertical-align:top;background:var(--sunk);min-width:108px}
+.cell.v-great{background:var(--ok-soft)}
+.cell.v-good{background:var(--fast-soft)}
+.cell.v-slow{background:var(--slow-soft)}
+.cell.v-crawl{background:var(--over-soft)}
+.cell.v-nofit{background:repeating-linear-gradient(135deg,var(--hatch) 0 5px,transparent 5px 10px);color:var(--ink-3)}
+.cell.na{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-3);font-size:13px;vertical-align:middle}
+.cell.best{box-shadow:inset 0 0 0 2px var(--ink)}
+.c-speed{display:block;font-weight:720;font-size:18px;line-height:1.15}
+.c-speed small{font-size:12px;font-weight:500;color:var(--ink-2)}
+.c-no{display:block;font-weight:620;font-size:14px;line-height:1.3}
+.c-mem{display:block;font-size:12.5px;color:var(--ink-2);margin:2px 0 7px}
+.c-tag{display:inline-block;margin-top:8px;background:var(--ink);color:var(--surface);font-size:11.5px;font-weight:650;border-radius:999px;padding:1px 9px}
+.legend .qbar{width:28px}
+.matrix-foot{margin:10px 0 0;font-size:14px;color:var(--ink-3)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.seg.seg2{grid-template-columns:repeat(2,1fr)}
+.seg.seg4{grid-template-columns:repeat(4,1fr)}
+.qpick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.qpick .seg{min-width:300px}
+.qnote{margin:0 0 8px;font-size:13.5px;color:var(--ink-3)}
+.list-legend{margin:0 0 10px}
+
+/* Supply map */
+.supply{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 24px 18px}
+.supply-tools{display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;align-items:center;margin:14px 0 10px}
+.supply-sum{margin:0;font-size:15px;color:var(--ink-2);max-width:80ch}
+.supply-sum b{color:var(--ink);font-weight:650}
+.stable{border-collapse:separate;border-spacing:0;width:100%;min-width:1000px}
+.stable th,.stable td{padding:10px 12px 10px 0;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+.stable thead th{border-top:0;font-size:12.5px;color:var(--ink-3);font-weight:500;vertical-align:bottom;padding-bottom:8px}
+.stable thead th b{display:block;color:var(--ink);font-size:14px;font-weight:700}
+.stable thead tr.grp th{font-size:13px;font-weight:650;color:var(--ink-2);padding-bottom:4px}
+.stable thead tr.grp th.g{box-shadow:inset 0 -2px 0 var(--line)}
+.stable tbody th{position:sticky;left:0;z-index:1;background:var(--surface);min-width:170px;font-weight:500}
+.stable .rn{display:block;font-weight:680;font-size:15px;color:var(--ink)}
+.stable .rs{display:block;font-size:12.5px;color:var(--ink-3)}
+.pcfit small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.st{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:620;color:var(--ink);text-decoration:none;border-radius:4px}
+a.st:hover .stl{text-decoration:underline}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.s-yes .dot{background:var(--ok)}
+.s-likely .dot{background:var(--fast)}
+.s-cloud .dot{background:var(--slow)}
+.s-community .dot{background:transparent;box-shadow:inset 0 0 0 2px var(--slow)}
+.s-no .dot{background:var(--line)}
+.s-check .dot{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink-3)}
+.s-no .stl,.s-check .stl{color:var(--ink-3);font-weight:500}
+.snote{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px;max-width:16ch}
+.ind{display:inline-block;font-size:13px;font-weight:650;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.ind.good{background:var(--ok-soft);color:var(--ok)}
+.ind.some{background:var(--slow-soft);color:var(--slow)}
+.ind.none{background:var(--over-soft);color:var(--over)}
+.ind-note{display:block;font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.supply-legend{margin:12px 0 0}
+.supply-legend .dot{width:10px;height:10px}
+.supply-notes{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--ink-2);max-width:92ch}
+
+/* Notes */
+.notes{margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.notes h3{font-size:16px;font-weight:700;margin:0 0 6px}
+.notes p{margin:0;color:var(--ink-2);font-size:14.5px}
+footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-3)}
+
+@media (max-width:860px){
+  .panels{grid-template-columns:1fr}
+  .notes{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .wrap{padding-top:28px}
+  .hero{padding:22px 18px 20px}
+  .facts{grid-template-columns:1fr}
+  .facts div+div{border-left:0;padding-left:0;border-top:1px solid var(--line);margin-top:12px}
+  .cols{display:none}
+  .listbox{padding:4px 16px 10px}
+  .m{grid-template-columns:1fr auto;grid-template-areas:"name v" "bar bar" "need speed" "detail detail"}
+  .m-name{grid-area:name}.m-bar{grid-area:bar}.m-need{grid-area:need;text-align:left}
+  .m-speed{grid-area:speed;text-align:right}.m-v{grid-area:v;align-self:start}.m-detail{grid-area:detail}
+  .m-speed .where{display:inline;margin-left:6px}
+  .add form{grid-template-columns:1fr 1fr}
+  .add form label:first-child{grid-column:1/-1}
+  .seg button{font-size:13px;padding:9px 4px}
+  .picks{padding:20px 16px 16px}
+  .pick{grid-template-columns:1fr 1fr 1fr}
+  .pick>div:first-child{grid-column:1/-1}
+  .qpick .seg{min-width:0;width:100%}
+  .supply{padding:20px 16px 16px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1>Which AI models can this computer run?</h1>
+    <p>This page checks the machine it’s open on against open models you can host yourself, and shows where each model can be downloaded or hosted, so the office isn’t tied to a single source.</p>
+  </header>
+
+  <section class="hero" aria-labelledby="verdict">
+    <p class="verdict" id="verdict" aria-live="polite">Checking this computer…</p>
+    <p class="verdict-sub" id="verdictSub"></p>
+    <p class="notice" id="notice" hidden><span id="noticeText"></span><button class="btn quiet" type="button" id="noticeBtn">Get exact numbers</button></p>
+    <div class="meter" id="meter" role="img"></div>
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <ul class="legend" id="legend"></ul>
+    <dl class="facts" id="facts"></dl>
+    <p class="setup" id="setup"></p>
+  </section>
+
+  <section class="supply" aria-labelledby="supply-h">
+    <div class="sec-head">
+      <h2 id="supply-h">Where each model comes from</h2>
+      <p>Nvidia agreed in September 2026 to buy Hugging Face, the main place open models are published. This map shows where else each model can be downloaded or hosted, next to whether this computer can run it. Select any cell to check the live listing.</p>
+    </div>
+    <div class="supply-tools">
+      <p class="supply-sum" id="supplySum"></p>
+      <label class="toggle"><input type="checkbox" id="supplyFit"> Only models that fit on this computer</label>
+    </div>
+    <div class="tscroll"><table class="stable" id="supplyTable"></table></div>
+    <ul class="legend supply-legend" id="supplyLegend"></ul>
+    <ul class="supply-notes">
+      <li>Hugging Face, Ollama and ModelScope let you download the model and run it on your own hardware. Microsoft Foundry and Amazon Bedrock run it on their servers, so prompts go to their cloud region.</li>
+      <li>Some open models in Foundry come through its Hugging Face collection. Those are marked “via Hugging Face” and don’t count toward independence.</li>
+      <li>“Hugging Face only” models are worth archiving: keep the model files and their licence on your own storage.</li>
+      <li>Availability checked 27 October 2026. Catalogs change often, so confirm a listing before relying on it.</li>
+    </ul>
+  </section>
+
+  <section class="picks" aria-labelledby="picks-h">
+    <div class="sec-head">
+      <h2 id="picks-h">Good choices for this computer</h2>
+      <p id="picksSub"></p>
+    </div>
+    <ul class="pick-list" id="picks"></ul>
+    <div class="matrix-wrap">
+      <h3>Model size against compression</h3>
+      <p class="matrix-guide">Across a row, compression changes the speed a lot and the quality only a little. Down a column, a bigger model changes the quality a lot. Each cell shows speed, memory needed and an answer-quality bar.</p>
+      <div class="tscroll"><table class="matrix" id="matrix"></table></div>
+      <ul class="legend" id="matrixLegend"></ul>
+      <p class="matrix-foot" id="matrixFoot"></p>
+    </div>
+  </section>
+
+  <div class="panels">
+    <section class="panel" aria-labelledby="pc-h">
+      <h2 id="pc-h">This computer</h2>
+      <p class="hint">Filled in from what the browser can see. Correct anything that’s wrong and everything updates.</p>
+
+      <div class="field">
+        <span class="flabel" id="mode-l">Graphics</span>
+        <div class="seg" role="group" aria-labelledby="mode-l" id="mode">
+          <button type="button" data-mode="gpu">Graphics card</button>
+          <button type="button" data-mode="unified">Unified memory</button>
+          <button type="button" data-mode="cpu">No graphics card</button>
+        </div>
+        <small id="modeHint"></small>
+      </div>
+
+      <div class="field" data-show="gpu unified">
+        <label for="gpuName"><span id="gpuNameLabel">Graphics card</span><span class="src" data-src="gpu"></span></label>
+        <input id="gpuName" type="text" list="gpuList" autocomplete="off" placeholder="Start typing, e.g. RTX 4090">
+        <datalist id="gpuList"></datalist>
+      </div>
+
+      <div class="row2" data-show="gpu">
+        <div class="field">
+          <label for="vram">Memory per card (GB)<span class="src" data-src="vram"></span></label>
+          <input id="vram" type="number" min="0" step="1" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="gpuCount">Number of cards</label>
+          <input id="gpuCount" type="number" min="1" max="8" step="1" inputmode="numeric">
+        </div>
+      </div>
+      <p class="note" id="vramNote" data-show="gpu" hidden></p>
+
+      <div class="field" data-show="gpu unified">
+        <label for="gpuBw">Memory bandwidth (GB/s)<span class="src" data-src="bw"></span></label>
+        <input id="gpuBw" type="number" min="0" step="1" inputmode="numeric">
+        <small>Comes from the card or chip model. It sets the speed estimate.</small>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="ram"><span id="ramLabel">System RAM (GB)</span><span class="src" data-src="ram"></span></label>
+          <input id="ram" type="number" min="1" step="1" inputmode="decimal">
+        </div>
+        <div class="field" data-show="gpu cpu">
+          <label for="ramBw">RAM type</label>
+          <select id="ramBw">
+            <option value="50">Not sure</option>
+            <option value="40">DDR4, most PCs before 2022</option>
+            <option value="70">DDR5, most PCs since 2022</option>
+            <option value="110">LPDDR5X, recent thin laptops</option>
+            <option value="180">Workstation, 4 channels</option>
+            <option value="380">Server, 8 or more channels</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="seen">
+        <h3>What this browser could see</h3>
+        <dl id="seen"></dl>
+        <div id="notes"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="use-h">
+      <h2 id="use-h">How you’ll use it</h2>
+      <p class="hint">More people and longer conversations need more memory, on top of the model itself.</p>
+      <div class="field">
+        <label for="users">People chatting at the same time <output id="usersOut" for="users">1</output></label>
+        <input id="users" type="range" min="1" max="32" step="1" value="1">
+      </div>
+      <div class="field">
+        <label for="ctx">How much of a conversation it remembers</label>
+        <select id="ctx">
+          <option value="4096">4K tokens, about 3,000 words</option>
+          <option value="8192" selected>8K tokens, about 6,000 words</option>
+          <option value="16384">16K tokens, about 12,000 words</option>
+          <option value="32768">32K tokens, a long report</option>
+          <option value="131072">128K tokens, a whole book</option>
+        </select>
+        <small>Chinese text uses roughly one token per character.</small>
+      </div>
+      <div class="field">
+        <span class="flabel" id="lang-l">Main language of the answers</span>
+        <div class="seg seg2" role="group" aria-labelledby="lang-l" id="lang">
+          <button type="button" data-lang="zh">Chinese (中文)</button>
+          <button type="button" data-lang="en">English</button>
+        </div>
+        <small>Models that are strong in Chinese rank higher when Chinese is chosen.</small>
+      </div>
+    </section>
+  </div>
+
+  <details class="exact" id="exact">
+    <summary><div><b>Get exact numbers with one command</b><span>Browsers can’t see how much memory a computer or graphics card has.</span></div></summary>
+    <div class="exact-body">
+      <p>Run this on the computer you’re checking, then paste everything it prints into the box below. It only reads hardware information, changes nothing and doesn’t need administrator rights. If PowerShell shows <code>&gt;&gt;</code> and waits after pasting, press Enter once more.</p>
+      <div class="tabs" role="tablist" aria-label="Operating system">
+        <button class="tab" role="tab" type="button" id="tab-win" aria-selected="true" aria-controls="code">Windows (PowerShell)</button>
+        <button class="tab" role="tab" type="button" id="tab-nix" aria-selected="false" aria-controls="code">macOS or Linux (Terminal)</button>
+      </div>
+      <pre id="code" role="tabpanel" tabindex="0"></pre>
+      <div class="actions">
+        <button class="btn quiet" type="button" id="copy">Copy command</button>
+        <span class="status" id="copyStatus" role="status"></span>
+      </div>
+      <div class="field">
+        <label for="paste">Paste the output here</label>
+        <textarea id="paste" spellcheck="false" placeholder='{ "os": "...", "cpu": "...", "ram_gb": ... }'></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" id="apply">Use these numbers</button>
+        <span class="status" id="applyStatus" role="status"></span>
+      </div>
+    </div>
+  </details>
+
+  <section class="models" aria-labelledby="models-h">
+    <div class="models-head">
+      <div>
+        <h2 id="models-h">Every model, from smallest to largest</h2>
+        <p>Each bar is drawn on the same scale as this computer’s memory. Select a model for the breakdown.</p>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Filter models"></div>
+    </div>
+    <div class="listbox">
+      <div class="list-tools">
+        <div class="qpick"><span class="flabel" id="q-l">Compression</span><div class="seg seg4" role="group" aria-labelledby="q-l" id="quantSeg"></div></div>
+        <label class="toggle"><input type="checkbox" id="fitOnly"> Hide models that won’t fit</label>
+      </div>
+      <p class="qnote" id="quantNote"></p>
+      <ul class="legend list-legend" id="listLegend"></ul>
+      <div class="cols" aria-hidden="true"><span>Model</span><span>Memory needed</span><span>Speed, one person</span><span></span></div>
+      <ul id="list"></ul>
+      <div class="add">
+        <h3>Add another model</h3>
+        <p>For a model that isn’t listed. Use the total size from its model card, and the active size if it’s a mixture-of-experts model.</p>
+        <form id="addForm">
+          <label>Name<input id="cName" type="text" required placeholder="e.g. My fine-tune 14B"></label>
+          <label>Total size (B)<input id="cParams" type="number" min="0.1" step="0.1" required inputmode="decimal"></label>
+          <label>Active size (B)<input id="cActive" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="Same"></label>
+          <button class="btn" type="submit">Add model</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes" aria-label="How the estimate works">
+    <div>
+      <h3>Memory</h3>
+      <p>Each model needs room for its weights at the chosen compression, plus chat memory (the KV cache) for every person at the chosen conversation length, plus some working space. A little graphics memory is kept back for the screen, and 15% of system RAM (at least 4 GB) for the operating system and office apps.</p>
+    </div>
+    <div>
+      <h3>Speed</h3>
+      <p>To write each token, the computer reads the model’s active weights from memory once, so speed is roughly memory bandwidth divided by active size. That’s why mixture-of-experts models with few active parameters are quick, and why spilling into system RAM slows everything down.</p>
+    </div>
+    <div>
+      <h3>Accuracy</h3>
+      <p>Expect memory and speed within about 25%. Answer quality is a rough ranking for comparing options, not a benchmark score. Figures assume Ollama, LM Studio or llama.cpp with GGUF files; vLLM reserves most graphics memory up front but handles many people at once much better.</p>
+    </div>
+  </section>
+
+  <footer>Version 2, October 2026. Model availability checked 27 October 2026. These are estimates, so try the real setup on one machine before buying hardware for the whole office.</footer>
+</main>
+
+<script type="text/plain" id="ps-script">$cs   = Get-CimInstance Win32_ComputerSystem
+$cpu  = Get-CimInstance Win32_Processor | Select-Object -First 1
+$os   = Get-CimInstance Win32_OperatingSystem
+$mem  = Get-CimInstance Win32_PhysicalMemory | Select-Object -First 1
+$gpus = @()
+$key  = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0*'
+foreach ($g in Get-ItemProperty $key -ErrorAction SilentlyContinue) {
+  if (-not $g.DriverDesc) { continue }
+  $m = $g.'HardwareInformation.qwMemorySize'
+  if (-not $m) { $m = $g.'HardwareInformation.MemorySize' }
+  if ($m -is [byte[]]) { $m = [BitConverter]::ToUInt32($m, 0) }
+  $gpus += [pscustomobject]@{ name = $g.DriverDesc; vram_gb = [math]::Round([double]$m / 1GB, 1) }
+}
+$drive = Get-PSDrive -Name $env:SystemDrive.TrimEnd(':')
+[pscustomobject]@{
+  os           = $os.Caption
+  cpu          = $cpu.Name.Trim()
+  cores        = $cpu.NumberOfCores
+  threads      = $cpu.NumberOfLogicalProcessors
+  ram_gb       = [math]::Round($cs.TotalPhysicalMemory / 1GB, 1)
+  ram_mhz      = $mem.ConfiguredClockSpeed
+  gpus         = $gpus
+  disk_free_gb = [math]::Round($drive.Free / 1GB, 1)
+} | ConvertTo-Json -Depth 3</script>
+
+<script type="text/plain" id="sh-script">os=$(uname -s)
+disk=$(df -Pk / | awk 'NR==2{printf "%.1f", $4/1048576}')
+if [ "$os" = "Darwin" ]; then
+  cpu=$(sysctl -n machdep.cpu.brand_string)
+  cores=$(sysctl -n hw.physicalcpu); threads=$(sysctl -n hw.logicalcpu)
+  ram=$(sysctl -n hw.memsize | awk '{printf "%.1f", $1/1073741824}')
+else
+  cpu=$(awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+  threads=$(nproc); cores=$(lscpu -p=CORE 2>/dev/null | grep -v '^#' | sort -u | wc -l)
+  ram=$(awk '/MemTotal/{printf "%.1f", $2/1048576}' /proc/meminfo)
+fi
+gpus=""
+if command -v nvidia-smi >/dev/null 2>&1; then
+  gpus=$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits |
+    awk -F', ' '{printf "%s{\"name\":\"%s\",\"vram_gb\":%.1f}", (NR>1?",":""), $1, $2/1024}')
+fi
+printf '{"os":"%s","cpu":"%s","cores":%s,"threads":%s,"ram_gb":%s,"gpus":[%s],"disk_free_gb":%s}\n' \
+  "$os" "$cpu" "${cores:-0}" "${threads:-0}" "$ram" "$gpus" "$disk"</script>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Data ---------- */
+const GIB = 1e9 / 1073741824;
+
+const QUANTS = {
+  q4:  { label: 'Q4_K_M, recommended', bpp: 0.61, note: 'Smallest download with only a small quality loss. The usual choice.' },
+  q5:  { label: 'Q5_K_M', bpp: 0.71, note: 'A little sharper than Q4 and about 15% bigger.' },
+  q8:  { label: 'Q8_0', bpp: 1.07, note: 'Close to the original quality, roughly twice the size of Q4.' },
+  f16: { label: 'FP16, uncompressed', bpp: 2.0, note: 'The original full-size weights. Mostly for servers.' }
+};
+
+// kv = chat memory per token in KB at 16-bit; swa = sliding-window attention (w = window, g = share of full-attention layers)
+const MODELS = [
+  { name: 'Qwen3.5 2B', maker: 'Alibaba', size: '2B', params: 2.3, active: 2.3, kv: 24, tags: ['chat','zh'], tier: 40,
+    note: 'Small enough for an ordinary office laptop with no graphics card.' },
+  { name: 'Qwen3.5 4B', maker: 'Alibaba', size: '4B', params: 4.5, active: 4.5, kv: 32, tags: ['chat','zh','vision'], tier: 58 },
+  { name: 'Gemma 4 E4B', maker: 'Google', size: '8B, 4B effective', params: 8, active: 4, kv: 136, swa: { w: 1024, g: 1/6 }, tags: ['chat','vision'], tier: 60 },
+  { name: 'Llama 3.1 TAIDE 8B', maker: 'TAIDE, Taiwan', size: '8B', params: 8, active: 8, kv: 128, tags: ['chat','zh'], tier: 52,
+    note: 'Trained in Taiwan for Traditional Chinese and local terminology.' },
+  { name: 'Qwen3.5 9B', maker: 'Alibaba', size: '9B', params: 9.5, active: 9.5, kv: 32, tags: ['chat','zh','vision'], tier: 68 },
+  { name: 'Gemma 4 12B', maker: 'Google', size: '12B', params: 12, active: 12, kv: 384, swa: { w: 1024, g: 1/6 }, tags: ['chat','vision'], tier: 72 },
+  { name: 'gpt-oss 20B', maker: 'OpenAI', size: '21B, 3.6B active', params: 21, active: 3.6, fixed: 13, kv: 48, swa: { w: 128, g: 0.5 }, tags: ['reasoning','code'], tier: 70,
+    note: 'Ships in its own 4-bit format, so the compression setting doesn’t change its size.' },
+  { name: 'Gemma 4 26B A4B', maker: 'Google', size: '26B, 4B active', params: 26.5, active: 3.8, kv: 240, swa: { w: 1024, g: 1/6 }, tags: ['chat','vision'], tier: 77,
+    note: 'Mixture-of-experts: needs memory for all 26B, but writes at the speed of a 4B model.' },
+  { name: 'Qwen3.6 27B', maker: 'Alibaba', size: '27B', params: 27, active: 27, kv: 64, tags: ['chat','code','reasoning','zh'], tier: 85 },
+  { name: 'Gemma 4 31B', maker: 'Google', size: '31B', params: 31, active: 31, kv: 496, swa: { w: 1024, g: 1/6 }, tags: ['chat','vision','reasoning'], tier: 80 },
+  { name: 'Qwen3.6 35B-A3B', maker: 'Alibaba', size: '35B, 3B active', params: 35, active: 3, kv: 20, tags: ['chat','code','zh'], tier: 82,
+    note: 'Mixture-of-experts: needs memory for all 35B, but writes at the speed of a 3B model.' },
+  { name: 'Llama 3.3 70B', maker: 'Meta', size: '70B', params: 70.6, active: 70.6, kv: 320, tags: ['chat'], tier: 72 },
+  { name: 'gpt-oss 120B', maker: 'OpenAI', size: '117B, 5.1B active', params: 117, active: 5.1, fixed: 61, kv: 72, swa: { w: 128, g: 0.5 }, tags: ['reasoning','code'], tier: 86,
+    note: 'Ships in its own 4-bit format and fits on a single 80 GB card.' },
+  { name: 'Qwen3.5 122B-A10B', maker: 'Alibaba', size: '122B, 10B active', params: 122, active: 10, kv: 24, tags: ['chat','code','reasoning','zh'], tier: 89 },
+  { name: 'Qwen3.5 397B-A17B', maker: 'Alibaba', size: '397B, 17B active', params: 397, active: 17, kv: 30, tags: ['chat','code','reasoning','zh','vision'], tier: 95,
+    note: 'Flagship size. Realistically needs a multi-GPU server or a large Mac Studio.' }
+];
+
+// [match keys, display name, memory GB, bandwidth GB/s, variant note, kind: d = dedicated, u = unified]
+const GPU_RAW = [
+  ['rtx 5090','NVIDIA GeForce RTX 5090',32,1792],
+  ['rtx 5080','NVIDIA GeForce RTX 5080',16,960],
+  ['rtx 5070 ti','NVIDIA GeForce RTX 5070 Ti',16,896],
+  ['rtx 5070','NVIDIA GeForce RTX 5070',12,672],
+  ['rtx 5060 ti','NVIDIA GeForce RTX 5060 Ti',16,448,'The RTX 5060 Ti also comes with 8 GB. Check which one this is.'],
+  ['rtx 5060','NVIDIA GeForce RTX 5060',8,448],
+  ['rtx 4090','NVIDIA GeForce RTX 4090',24,1008],
+  ['rtx 4080 super','NVIDIA GeForce RTX 4080 SUPER',16,736],
+  ['rtx 4080','NVIDIA GeForce RTX 4080',16,717],
+  ['rtx 4070 ti super','NVIDIA GeForce RTX 4070 Ti SUPER',16,672],
+  ['rtx 4070 ti','NVIDIA GeForce RTX 4070 Ti',12,504],
+  ['rtx 4070 super','NVIDIA GeForce RTX 4070 SUPER',12,504],
+  ['rtx 4070','NVIDIA GeForce RTX 4070',12,504],
+  ['rtx 4060 ti','NVIDIA GeForce RTX 4060 Ti',8,288,'The RTX 4060 Ti also comes with 16 GB. Check which one this is.'],
+  ['rtx 4060','NVIDIA GeForce RTX 4060',8,272],
+  ['rtx 3090 ti','NVIDIA GeForce RTX 3090 Ti',24,1008],
+  ['rtx 3090','NVIDIA GeForce RTX 3090',24,936],
+  ['rtx 3080 ti','NVIDIA GeForce RTX 3080 Ti',12,912],
+  ['rtx 3080','NVIDIA GeForce RTX 3080',10,760,'The RTX 3080 also comes with 12 GB. Check which one this is.'],
+  ['rtx 3070 ti','NVIDIA GeForce RTX 3070 Ti',8,608],
+  ['rtx 3070','NVIDIA GeForce RTX 3070',8,448],
+  ['rtx 3060 ti','NVIDIA GeForce RTX 3060 Ti',8,448],
+  ['rtx 3060','NVIDIA GeForce RTX 3060',12,360,'The RTX 3060 also comes with 8 GB. Check which one this is.'],
+  ['rtx 3050','NVIDIA GeForce RTX 3050',8,224],
+  ['rtx 2080 ti','NVIDIA GeForce RTX 2080 Ti',11,616],
+  ['rtx 2080 super','NVIDIA GeForce RTX 2080 SUPER',8,496],
+  ['rtx 2080','NVIDIA GeForce RTX 2080',8,448],
+  ['rtx 2070 super','NVIDIA GeForce RTX 2070 SUPER',8,448],
+  ['rtx 2070','NVIDIA GeForce RTX 2070',8,448],
+  ['rtx 2060 super','NVIDIA GeForce RTX 2060 SUPER',8,448],
+  ['rtx 2060','NVIDIA GeForce RTX 2060',6,336,'The RTX 2060 also comes with 12 GB. Check which one this is.'],
+  ['gtx 1080 ti','NVIDIA GeForce GTX 1080 Ti',11,484],
+  ['gtx 1080','NVIDIA GeForce GTX 1080',8,320],
+  ['gtx 1070','NVIDIA GeForce GTX 1070',8,256],
+  ['gtx 1660','NVIDIA GeForce GTX 1660',6,192],
+  ['gtx 1650','NVIDIA GeForce GTX 1650',4,128],
+  ['rtx 5090 laptop','NVIDIA GeForce RTX 5090 Laptop GPU',24,896],
+  ['rtx 5080 laptop','NVIDIA GeForce RTX 5080 Laptop GPU',16,960],
+  ['rtx 5070 ti laptop','NVIDIA GeForce RTX 5070 Ti Laptop GPU',12,672],
+  ['rtx 5070 laptop','NVIDIA GeForce RTX 5070 Laptop GPU',8,384],
+  ['rtx 5060 laptop','NVIDIA GeForce RTX 5060 Laptop GPU',8,384],
+  ['rtx 4090 laptop','NVIDIA GeForce RTX 4090 Laptop GPU',16,576],
+  ['rtx 4080 laptop','NVIDIA GeForce RTX 4080 Laptop GPU',12,432],
+  ['rtx 4070 laptop','NVIDIA GeForce RTX 4070 Laptop GPU',8,256],
+  ['rtx 4060 laptop','NVIDIA GeForce RTX 4060 Laptop GPU',8,256],
+  ['rtx 4050 laptop','NVIDIA GeForce RTX 4050 Laptop GPU',6,192],
+  ['rtx 3080 ti laptop','NVIDIA GeForce RTX 3080 Ti Laptop GPU',16,512],
+  ['rtx 3080 laptop','NVIDIA GeForce RTX 3080 Laptop GPU',8,384,'The laptop RTX 3080 also comes with 16 GB. Check which one this is.'],
+  ['rtx 3070 laptop','NVIDIA GeForce RTX 3070 Laptop GPU',8,384],
+  ['rtx 3060 laptop','NVIDIA GeForce RTX 3060 Laptop GPU',6,336],
+  ['rtx 3050 laptop','NVIDIA GeForce RTX 3050 Laptop GPU',4,192],
+  ['rtx pro 6000','NVIDIA RTX PRO 6000 Blackwell',96,1792],
+  ['rtx 6000 ada','NVIDIA RTX 6000 Ada',48,960],
+  ['rtx a6000','NVIDIA RTX A6000',48,768],
+  ['rtx 5000 ada','NVIDIA RTX 5000 Ada',32,576],
+  ['rtx a5000','NVIDIA RTX A5000',24,768],
+  ['rtx 4500 ada','NVIDIA RTX 4500 Ada',24,432],
+  ['rtx 4000 ada|rtx 4000 sff ada','NVIDIA RTX 4000 Ada',20,360],
+  ['rtx a4000','NVIDIA RTX A4000',16,448],
+  ['rtx 2000 ada','NVIDIA RTX 2000 Ada',16,224],
+  ['h200','NVIDIA H200',141,4800],
+  ['h100','NVIDIA H100',80,2000],
+  ['a100','NVIDIA A100',80,1935,'The A100 also comes with 40 GB. Check which one this is.'],
+  ['l40s','NVIDIA L40S',48,864],
+  ['nvidia l4','NVIDIA L4',24,300],
+  ['nvidia a10','NVIDIA A10',24,600],
+  ['tesla t4|nvidia t4','NVIDIA T4',16,320],
+  ['v100','NVIDIA V100',32,900,'The V100 also comes with 16 GB. Check which one this is.'],
+  ['gb10|dgx spark','NVIDIA DGX Spark (GB10)',128,273,null,'u'],
+  ['rx 9070 xt','AMD Radeon RX 9070 XT',16,640],
+  ['rx 9070','AMD Radeon RX 9070',16,640],
+  ['rx 9060 xt','AMD Radeon RX 9060 XT',16,320,'The RX 9060 XT also comes with 8 GB. Check which one this is.'],
+  ['rx 7900 xtx','AMD Radeon RX 7900 XTX',24,960],
+  ['rx 7900 xt','AMD Radeon RX 7900 XT',20,800],
+  ['rx 7900 gre','AMD Radeon RX 7900 GRE',16,576],
+  ['rx 7800 xt','AMD Radeon RX 7800 XT',16,624],
+  ['rx 7700 xt','AMD Radeon RX 7700 XT',12,432],
+  ['rx 7600 xt','AMD Radeon RX 7600 XT',16,288],
+  ['rx 7600','AMD Radeon RX 7600',8,288],
+  ['rx 6950 xt','AMD Radeon RX 6950 XT',16,576],
+  ['rx 6900 xt','AMD Radeon RX 6900 XT',16,512],
+  ['rx 6800 xt','AMD Radeon RX 6800 XT',16,512],
+  ['rx 6800','AMD Radeon RX 6800',16,512],
+  ['rx 6700 xt','AMD Radeon RX 6700 XT',12,384],
+  ['rx 6600 xt','AMD Radeon RX 6600 XT',8,256],
+  ['rx 6600','AMD Radeon RX 6600',8,224],
+  ['ai pro r9700','AMD Radeon AI PRO R9700',32,640],
+  ['pro w7900','AMD Radeon PRO W7900',48,864],
+  ['pro w7800','AMD Radeon PRO W7800',32,576],
+  ['radeon 8060s','AMD Ryzen AI Max+ (Radeon 8060S)',128,256,null,'u'],
+  ['radeon 8050s','AMD Ryzen AI Max (Radeon 8050S)',64,256,null,'u'],
+  ['arc pro b60','Intel Arc Pro B60',24,456],
+  ['arc b580','Intel Arc B580',12,456],
+  ['arc b570','Intel Arc B570',10,380],
+  ['arc a770','Intel Arc A770',16,560,'The Arc A770 also comes with 8 GB. Check which one this is.'],
+  ['arc a750','Intel Arc A750',8,512],
+  ['arc a380','Intel Arc A380',6,186],
+  ['apple m1','Apple M1',0,68,null,'u'],
+  ['apple m1 pro','Apple M1 Pro',0,200,null,'u'],
+  ['apple m1 max','Apple M1 Max',0,400,null,'u'],
+  ['apple m1 ultra','Apple M1 Ultra',0,800,null,'u'],
+  ['apple m2','Apple M2',0,100,null,'u'],
+  ['apple m2 pro','Apple M2 Pro',0,200,null,'u'],
+  ['apple m2 max','Apple M2 Max',0,400,null,'u'],
+  ['apple m2 ultra','Apple M2 Ultra',0,800,null,'u'],
+  ['apple m3','Apple M3',0,100,null,'u'],
+  ['apple m3 pro','Apple M3 Pro',0,150,null,'u'],
+  ['apple m3 max','Apple M3 Max',0,400,null,'u'],
+  ['apple m3 ultra','Apple M3 Ultra',0,819,null,'u'],
+  ['apple m4','Apple M4',0,120,null,'u'],
+  ['apple m4 pro','Apple M4 Pro',0,273,null,'u'],
+  ['apple m4 max','Apple M4 Max',0,546,null,'u'],
+  ['apple m5','Apple M5',0,153,null,'u']
+];
+const GPU_DB = GPU_RAW.map(([k, name, vram, bw, note = null, kind = 'd']) => ({ keys: k.split('|'), name, vram, bw, note, kind }));
+
+// Where each model is available. [status, note, viaHuggingFace]
+// status: yes = listed; likely = family or publisher listed, this size not individually confirmed;
+// cloud = runs only on the provider's servers; community = third-party uploads only; no = not listed; check = not verified.
+const SOURCES = [
+  { k: 'hf', name: 'Hugging Face', owner: 'Owned by Nvidia (deal agreed Sept 2026)', group: 'dl', url: s => `https://huggingface.co/models?search=${encodeURIComponent(s.q)}` },
+  { k: 'ol', name: 'Ollama', owner: 'Independent company', group: 'dl', url: s => `https://ollama.com/search?q=${encodeURIComponent(s.oq)}` },
+  { k: 'ms', name: 'ModelScope', owner: 'Run by Alibaba', group: 'dl', url: s => `https://modelscope.cn/search?search=${encodeURIComponent(s.q)}` },
+  { k: 'fd', name: 'Microsoft Foundry', owner: 'Microsoft', group: 'cloud', url: () => 'https://ai.azure.com/catalog' },
+  { k: 'br', name: 'Amazon Bedrock', owner: 'Amazon', group: 'cloud', url: () => 'https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html' }
+];
+const STATUS = { yes: 'Yes', likely: 'Likely', cloud: 'Cloud only', community: 'Community upload', no: 'Not listed', check: 'Check' };
+const SUPPLY = {
+  'Qwen3.5 2B':         { q: 'Qwen3.5-2B', oq: 'qwen3.5', hf: ['yes'], ol: ['yes', 'qwen3.5:2b'], ms: ['likely', 'Official Qwen page'], fd: ['check'], br: ['no', 'Only older Qwen3'] },
+  'Qwen3.5 4B':         { q: 'Qwen3.5-4B', oq: 'qwen3.5', hf: ['yes'], ol: ['yes', 'qwen3.5:4b'], ms: ['likely', 'Official Qwen page'], fd: ['check'], br: ['no', 'Only older Qwen3'] },
+  'Gemma 4 E4B':        { q: 'gemma-4-E4B', oq: 'gemma4', hf: ['yes'], ol: ['likely', 'gemma4 family'], ms: ['check'], fd: ['likely', 'Gemma 4 family listed'], br: ['no', 'Has E2B, 26B, 31B'] },
+  'Llama 3.1 TAIDE 8B': { q: 'TAIDE', oq: 'taide', hf: ['yes'], ol: ['community'], ms: ['check'], fd: ['no'], br: ['no'] },
+  'Qwen3.5 9B':         { q: 'Qwen3.5-9B', oq: 'qwen3.5', hf: ['yes'], ol: ['yes', 'qwen3.5:9b'], ms: ['likely', 'Official Qwen page'], fd: ['check'], br: ['no', 'Only older Qwen3'] },
+  'Gemma 4 12B':        { q: 'gemma-4-12b', oq: 'gemma4', hf: ['yes'], ol: ['yes', 'gemma4:12b'], ms: ['check'], fd: ['likely', 'Gemma 4 family listed'], br: ['no', 'Has E2B, 26B, 31B'] },
+  'gpt-oss 20B':        { q: 'gpt-oss-20b', oq: 'gpt-oss', hf: ['yes'], ol: ['yes', 'gpt-oss:20b'], ms: ['check'], fd: ['yes'], br: ['yes'] },
+  'Gemma 4 26B A4B':    { q: 'gemma-4-26b', oq: 'gemma4', hf: ['yes'], ol: ['yes', 'gemma4:26b'], ms: ['check'], fd: ['likely', 'Gemma 4 family listed'], br: ['yes', 'US and Frankfurt regions'] },
+  'Qwen3.6 27B':        { q: 'Qwen3.6-27B', oq: 'qwen3.6', hf: ['yes'], ol: ['yes', 'qwen3.6:27b'], ms: ['yes'], fd: ['yes', 'via Hugging Face', true], br: ['no', 'SageMaker only'] },
+  'Gemma 4 31B':        { q: 'gemma-4-31b', oq: 'gemma4', hf: ['yes'], ol: ['yes', 'gemma4:31b'], ms: ['check'], fd: ['likely', 'Gemma 4 family listed'], br: ['yes', 'US and Frankfurt regions'] },
+  'Qwen3.6 35B-A3B':    { q: 'Qwen3.6-35B-A3B', oq: 'qwen3.6', hf: ['yes'], ol: ['yes', 'qwen3.6:35b'], ms: ['likely', 'Official Qwen page'], fd: ['yes', 'Direct from Azure'], br: ['no'] },
+  'Llama 3.3 70B':      { q: 'Llama-3.3-70B-Instruct', oq: 'llama3.3', hf: ['yes', 'Accept licence first'], ol: ['yes', 'llama3.3:70b'], ms: ['likely'], fd: ['likely'], br: ['likely'] },
+  'gpt-oss 120B':       { q: 'gpt-oss-120b', oq: 'gpt-oss', hf: ['yes'], ol: ['yes', 'gpt-oss:120b'], ms: ['check'], fd: ['yes'], br: ['yes'] },
+  'Qwen3.5 122B-A10B':  { q: 'Qwen3.5-122B-A10B', oq: 'qwen3.5', hf: ['yes'], ol: ['yes', 'qwen3.5:122b'], ms: ['likely', 'Official Qwen page'], fd: ['check'], br: ['no', 'Only older Qwen3'] },
+  'Qwen3.5 397B-A17B':  { q: 'Qwen3.5-397B-A17B', oq: 'qwen3.5', hf: ['yes'], ol: ['cloud', 'qwen3.5:cloud'], ms: ['likely', 'Official Qwen page'], fd: ['check'], br: ['no', 'Only older Qwen3'] }
+};
+function supplyFor(m) {
+  return SUPPLY[m.name] || { q: m.name, oq: m.name, hf: ['check'], ol: ['check'], ms: ['check'], fd: ['check'], br: ['check'] };
+}
+function independence(s) {
+  const ok = v => v && (v[0] === 'yes' || v[0] === 'likely') && !v[2];
+  const dl = ['ol', 'ms'].filter(k => ok(s[k])).length;
+  const n = dl + ['fd', 'br'].filter(k => ok(s[k])).length;
+  if (n >= 3 || (dl >= 1 && n >= 2)) return ['good', 'Well covered', `${n} other sources`];
+  if (n >= 1) return ['some', 'Limited', `${n} other source`];
+  return ['none', 'Hugging Face only', 'Keep your own copy'];
+}
+
+const TAGS = { chat: 'Chat', code: 'Coding', reasoning: 'Reasoning', vision: 'Reads images', zh: 'Strong Chinese', custom: 'Added by you' };
+const VERDICT = { great: 'Runs well', good: 'Usable', slow: 'Slow', crawl: 'Too slow', nofit: 'Won’t fit' };
+const WHERE = { gpu: 'on graphics card', unified: 'unified memory', split: 'card + RAM', cpu: 'on processor' };
+const QSHORT = { q4: 'Q4', q5: 'Q5', q8: 'Q8', f16: 'FP16', native: 'native 4-bit' };
+const QHEAD = { q4: ['Q4_K_M', 'Smallest, small loss'], q5: ['Q5_K_M', 'A bit sharper'], q8: ['Q8_0', 'Near original, 2× Q4'], f16: ['FP16', 'Original, full size'] };
+const CTX = { 4096: '4K', 8192: '8K', 16384: '16K', 32768: '32K', 131072: '128K' };
+const SRC_LABEL = { detected: 'Detected', lookup: 'From model', assumed: 'Guess, please check', unknown: 'Please enter', script: 'From command', edited: 'Edited' };
+const INTEGRATED = /( intel )|( radeon (graphics|vega|\d{3,4}m) )|( vega \d+ )|( mali )|( adreno )/;
+
+/* ---------- State ---------- */
+const S = {
+  mode: 'cpu', gpuName: '', vram: 0, gpuCount: 1, gpuBw: 0, ram: 16, ramBw: 50, ramMhz: 0,
+  quant: 'q4', ctx: 8192, users: 1, supplyFit: false, lang: /^zh/i.test(navigator.language || '') ? 'zh' : 'en', filter: 'all', fitOnly: false,
+  custom: [], diskFree: null, vramNote: '',
+  src: { gpu: '', vram: '', bw: '', ram: '' },
+  seen: {}, notes: [], open: new Set(), ready: false
+};
+
+/* ---------- Helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gb = v => (v >= 100 ? String(Math.round(v)) : v.toFixed(1)) + ' GB';
+const tpsTxt = t => t >= 100 ? String(Math.round(t / 10) * 10) : t >= 10 ? String(Math.round(t)) : t.toFixed(1);
+const norm = s => ' ' + String(s || '').toLowerCase().replace(/\(r\)|\(tm\)|®|™/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+
+function lookupGpu(s) {
+  const n = norm(s); let best = null, len = 0;
+  for (const g of GPU_DB) for (const k of g.keys) {
+    const kk = ' ' + k + ' ';
+    if (n.includes(kk) && kk.length > len) { best = g; len = kk.length; }
+  }
+  return best;
+}
+
+function prettyGpu(r) {
+  if (!r) return '';
+  let s = r.trim();
+  if (/^ANGLE \(/.test(s)) {
+    s = s.replace(/^ANGLE \(/, '').replace(/\)\s*$/, '');
+    const parts = s.split(',').map(x => x.trim());
+    s = (parts[1] || parts[0]).replace(/^ANGLE Metal Renderer:\s*/, '');
+  }
+  return s.replace(/,?\s*or similar$/i, '').replace(/\s*\(0x[0-9a-f]+\).*$/i, '')
+          .replace(/\s+Direct3D.*$/i, '').replace(/\/PCIe.*$/i, '').replace(/\s*\((TM|R)\)/gi, '').trim();
+}
+
+/* ---------- Model maths ---------- */
+function allModels() { return MODELS.concat(S.custom); }
+
+function capacity() {
+  const reserve = Math.max(4, S.ram * 0.15);
+  if (S.mode === 'gpu') {
+    const fast = Math.max(0, S.vram - 0.7) * Math.max(1, S.gpuCount);
+    const slow = Math.max(0, S.ram - reserve);
+    return { kind: 'gpu', fast, slow, cap: fast + slow, fastBw: S.gpuBw || 300, slowBw: S.ramBw };
+  }
+  if (S.mode === 'unified') {
+    const fast = S.ram * (S.ram > 36 ? 0.75 : 0.66);
+    return { kind: 'unified', fast, slow: 0, cap: fast, fastBw: S.gpuBw || 100, slowBw: S.gpuBw || 100 };
+  }
+  const slow = Math.max(0, S.ram - reserve);
+  return { kind: 'cpu', fast: 0, slow, cap: slow, fastBw: 0, slowBw: S.ramBw };
+}
+
+function need(m, q = S.quant) {
+  const weights = m.fixed != null ? m.fixed : m.params * QUANTS[q === 'native' ? 'q4' : q].bpp * GIB;
+  const eff = m.swa ? S.ctx * m.swa.g + Math.min(S.ctx, m.swa.w) * (1 - m.swa.g) : S.ctx;
+  const kvOne = m.kv * 1024 * eff / 1073741824;
+  const kv = kvOne * S.users;
+  const overhead = 0.5 + 0.03 * weights;
+  return { weights, kv, kvOne, overhead, total: weights + kv + overhead };
+}
+
+function place(m, n, c) {
+  let fits = true, where = '', gpuFrac = 0;
+  if (c.kind === 'gpu') {
+    if (n.total <= c.fast) { where = 'gpu'; gpuFrac = 1; }
+    else if (n.total <= c.cap) {
+      gpuFrac = clamp((c.fast - n.kv - n.overhead) / n.weights, 0, 1);
+      where = gpuFrac >= 0.05 ? 'split' : 'cpu';
+    } else fits = false;
+  } else if (c.kind === 'unified') {
+    if (n.total <= c.fast) { where = 'unified'; gpuFrac = 1; } else fits = false;
+  } else {
+    if (n.total <= c.slow) where = 'cpu'; else fits = false;
+  }
+  let tps = 0;
+  if (fits) {
+    const per = n.weights * (m.active / m.params);
+    let t;
+    if (where === 'gpu' || where === 'unified') t = per / (c.fastBw * 0.65 * GIB) + 0.004;
+    else if (where === 'split') t = per * gpuFrac / (c.fastBw * 0.65 * GIB) + per * (1 - gpuFrac) / (c.slowBw * 0.55 * GIB) + 0.006;
+    else t = per / (c.slowBw * 0.55 * GIB) + 0.006;
+    tps = 1 / t;
+  }
+  const v = !fits ? 'nofit' : tps >= 15 ? 'great' : tps >= 6 ? 'good' : tps >= 3 ? 'slow' : 'crawl';
+  let chats = 0;
+  if (fits) {
+    const room = (where === 'gpu' || where === 'unified') ? c.fast : c.cap;
+    chats = Math.floor((room - n.weights - n.overhead) / n.kvOne);
+  }
+  return { fits, where, gpuFrac, tps, v, chats };
+}
+
+// Rough answer-quality score: the model's standing, a bonus for strong Chinese when answers are in Chinese,
+// minus a compression penalty that is larger for small models.
+function quality(m, q) {
+  const base = m.tier + (S.lang === 'zh' && m.tags.includes('zh') ? 6 : 0);
+  if (m.fixed != null || q === 'native') return base;
+  const loss = m.params < 10 ? 5 : m.params < 40 ? 3 : 2;
+  return base - { q4: loss, q5: loss / 2, q8: 0.5, f16: 0 }[q];
+}
+const qLabel = v => v >= 86 ? 'Excellent' : v >= 74 ? 'Strong' : v >= 62 ? 'Good' : v >= 50 ? 'Fair' : 'Basic';
+const qPct = v => clamp((v - 30) / 65 * 100, 4, 100).toFixed(0);
+const optName = r => r.q === 'native' ? r.m.name : `${r.m.name} at ${QSHORT[r.q]}`;
+
+function evalAll(c) {
+  const out = [];
+  for (const m of allModels()) {
+    for (const q of (m.fixed != null ? ['native'] : Object.keys(QUANTS))) {
+      const n = need(m, q);
+      out.push({ m, q, n, ...place(m, n, c), quality: quality(m, q) });
+    }
+  }
+  return out;
+}
+
+function pickBest(opts, c) {
+  // Highest quality that writes at reading speed (6+ tokens/s), preferring options that sit in one kind of memory.
+  const whole = r => r.where === 'gpu' || r.where === 'unified' || (r.where === 'cpu' && c.kind === 'cpu');
+  const pool = opts.filter(r => r.fits && !r.m.custom);
+  const by = (min, test) => pool.filter(r => r.tps >= min && test(r)).sort((a, b) => (b.quality - a.quality) || (b.tps - a.tps))[0];
+  return by(6, whole) || by(6, () => true) || by(3, whole) || by(3, () => true) || null;
+}
+
+/* ---------- Bars ---------- */
+const pc = (v, dom) => (clamp(v, 0, dom) / dom * 100).toFixed(2) + '%';
+function zones(c, dom) {
+  let h = '';
+  if (c.fast > 0) h += `<span class="zone zf" style="left:0;width:${pc(c.fast, dom)}"></span>`;
+  if (c.slow > 0) h += `<span class="zone zs" style="left:${pc(c.fast, dom)};width:${pc(c.slow, dom)}"></span>`;
+  return h;
+}
+function fills(total, c, dom) {
+  let h = '';
+  const put = (cls, a, b) => {
+    a = clamp(a, 0, dom); b = clamp(b, 0, dom);
+    if (b - a > 1e-6) h += `<span class="fill ${cls}" style="left:${(a / dom * 100).toFixed(2)}%;width:${((b - a) / dom * 100).toFixed(2)}%"></span>`;
+  };
+  put('f-fast', 0, Math.min(total, c.fast));
+  put('f-slow', c.fast, Math.min(total, c.cap));
+  if (total > c.cap) put('f-over', c.cap, total);
+  if (total > dom) h += '<span class="clip" aria-hidden="true"></span>';
+  return h;
+}
+
+/* ---------- Rendering ---------- */
+function renderHero(c, opts, best) {
+  const fitting = opts.filter(r => r.fits && (r.q === 'q4' || r.q === 'native'));
+  const largest = fitting.slice().sort((a, b) => b.m.params - a.m.params)[0];
+  const V = $('#verdict'), sub = $('#verdictSub');
+
+  if (!S.ready) { V.textContent = 'Checking this computer…'; sub.textContent = ''; }
+  else if (best) {
+    const how = { gpu: 'on its graphics card', unified: 'in unified memory', cpu: 'on its processor', split: 'split between graphics card and RAM' }[best.where];
+    V.textContent = `This computer can run ${optName(best)} ${how}, at about ${tpsTxt(best.tps)} tokens a second.`;
+    sub.textContent = best.tps >= 30 ? 'Replies would appear about as fast as ChatGPT’s.'
+      : best.tps >= 15 ? 'That’s comfortably faster than anyone reads.'
+      : best.tps >= 9 ? 'Faster than reading speed, though long answers take a little while.'
+      : best.tps >= 6 ? 'About reading speed: comfortable for one person, slow for long answers.'
+      : 'Usable, but long answers will take a while to finish.';
+  } else if (fitting.length) {
+    const fastest = fitting.slice().sort((a, b) => b.tps - a.tps)[0];
+    V.textContent = 'This computer can only run small models, and slowly.';
+    sub.textContent = `The quickest option is ${optName(fastest)} at about ${tpsTxt(fastest.tps)} tokens a second.`;
+  } else {
+    V.textContent = 'None of these models fit in this computer’s memory.';
+    sub.textContent = 'Check the memory numbers below. If they’re right, this machine needs more RAM or a graphics card.';
+  }
+
+  const guesses = [];
+  if (S.src.ram === 'assumed') guesses.push('the amount of RAM');
+  if (S.mode === 'gpu' && !S.vram) guesses.push('the graphics card’s memory');
+  else if (S.mode === 'gpu' && S.src.vram === 'assumed') guesses.push('which version of the graphics card this is');
+  if (S.src.gpu === 'assumed') guesses.push('the exact graphics model');
+  const notice = $('#notice');
+  if (S.ready && guesses.length) {
+    notice.hidden = false;
+    $('#noticeText').textContent = `This page had to guess ${joinList(guesses)}, because browsers don’t reveal it. Correct it below, or run the one-line check.`;
+  } else notice.hidden = true;
+
+  const dom = c.cap > 0 ? c.cap : 1;
+  const meter = $('#meter');
+  meter.innerHTML = zones(c, dom) + (best ? fills(best.n.total, c, dom) : '');
+  meter.setAttribute('aria-label', `This computer has ${gb(c.cap)} usable for a model` + (best ? `; ${optName(best)} needs ${gb(best.n.total)}.` : '.'));
+  const step = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512].find(s => dom / s <= 7) || 1024;
+  let t = '';
+  for (let v = 0; v <= dom + 1e-9; v += step) t += `<span style="left:${pc(v, dom)}">${v}${v === 0 ? ' GB' : ''}</span>`;
+  $('#ticks').innerHTML = t;
+
+  const L = [];
+  if (c.kind === 'gpu') {
+    L.push(['zf', `Graphics card memory, ${gb(c.fast)} usable`]);
+    L.push(['zs', `System RAM, ${gb(c.slow)} spare and much slower`]);
+  } else if (c.kind === 'unified') L.push(['zf', `Unified memory, ${gb(c.fast)} usable by the GPU`]);
+  else L.push(['zs', `System RAM, ${gb(c.slow)} spare for a model`]);
+  if (best) L.push([c.kind === 'cpu' ? 'need s' : 'need', `${optName(best)} needs ${gb(best.n.total)}`]);
+  $('#legend').innerHTML = L.map(([k, v]) => `<li><span class="sw ${k}"></span>${esc(v)}</li>`).join('');
+
+  const onGpu = best && (best.where === 'gpu' || best.where === 'unified');
+  const chats = !best ? 'Not enough to share'
+    : !onGpu ? 'One or two; the processor is the limit'
+    : best.chats >= 1 ? `About ${best.chats > 64 ? '64+' : best.chats} at ${CTX[S.ctx]} each` : `One, at ${CTX[S.ctx]}`;
+  $('#facts').innerHTML = [
+    ['Best pick', best ? `${optName(best)}, about ${tpsTxt(best.tps)} tokens/s` : 'Nothing runs at a usable speed'],
+    ['Largest that fits', largest ? `${optName(largest)} (${VERDICT[largest.v].toLowerCase()})` : 'None'],
+    ['Conversations at once', chats]
+  ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
+
+  $('#setup').innerHTML = setupText(best);
+}
+
+function renderPicks(c, opts, best) {
+  const pool = opts.filter(r => r.fits && !r.m.custom);
+  const byQuality = (a, b) => (b.quality - a.quality) || (b.tps - a.tps);
+  const listed = m => picks.some(p => p.r.m === m);
+  const picks = [];
+  if (best) picks.push({ role: 'Best everyday pick', r: best, lead: true,
+    why: best.tps >= 15 ? 'The highest-quality option that still answers quickly.' : 'The highest-quality option that still writes at reading speed or faster.' });
+  if (best) {
+    const fast = pool.filter(r => r.quality >= best.quality - 22 && r.m !== best.m).sort((a, b) => b.tps - a.tps)[0];
+    if (fast && fast.tps >= best.tps * 1.4) picks.push({ role: 'When speed matters', r: fast,
+      why: `About ${(fast.tps / best.tps).toFixed(1)}× quicker. Good for short answers, sorting and quick lookups.` });
+  }
+  const deep = pool.filter(r => r.tps >= 3 && !listed(r.m)).sort(byQuality)[0];
+  if (deep && (!best || deep.quality >= best.quality + 3)) picks.push({ role: 'Best answers, if you can wait', r: deep,
+    why: 'Noticeably better answers, but slow. Fine for summaries and drafts you can leave running.' });
+  const code = pool.filter(r => r.m.tags.includes('code') && r.tps >= 5 && !listed(r.m)).sort(byQuality)[0];
+  if (code && !(best && best.m.tags.includes('code'))) picks.push({ role: 'For coding', r: code,
+    why: 'The strongest coding model here that runs at a usable speed.' });
+  if (S.lang === 'zh') {
+    const tw = pool.filter(r => /TAIDE/.test(r.m.name) && r.tps >= 3 && !listed(r.m)).sort((a, b) => b.tps - a.tps)[0];
+    if (tw) picks.push({ role: 'Tuned for Taiwan', r: tw,
+      why: 'Trained in Taiwan on Traditional Chinese and local terms. Worth comparing on your own documents.' });
+  }
+  if (c.kind === 'cpu' && S.ram < 60) {
+    const target = S.ram < 30 ? 32 : 64, saved = S.ram;
+    S.ram = target;
+    const c2 = capacity(), b2 = pickBest(evalAll(c2), c2);
+    S.ram = saved;
+    if (b2 && (!best || b2.quality >= best.quality + 4)) picks.push({ role: `With ${target} GB of RAM`, r: b2, whatif: true,
+      why: 'What this computer could run after a RAM upgrade. A large mixture-of-experts model reads only a small part of itself per word.' });
+  }
+
+  $('#picksSub').textContent = `Ranked for ${S.users === 1 ? 'one person' : S.users + ' people at once'}, ${CTX[S.ctx]} conversations, answers mostly in ${S.lang === 'zh' ? 'Chinese' : 'English'}. Change these in “How you’ll use it” below.`;
+  $('#picks').innerHTML = picks.length ? picks.map(p => {
+    const r = p.r;
+    return `<li class="pick${p.lead ? ' lead' : ''}${p.whatif ? ' whatif' : ''}">
+      <div><span class="role">${esc(p.role)}</span><span class="pname">${esc(r.m.name)} <span class="pq">${r.q === 'native' ? 'native 4-bit' : 'at ' + QSHORT[r.q]}</span></span><p class="why">${esc(p.why)}</p></div>
+      <div><span class="k">Memory</span><span class="val">${gb(r.n.total)}</span></div>
+      <div><span class="k">Speed</span><span class="val">${tpsTxt(r.tps)} <small>tok/s</small></span></div>
+      <div class="qmeter"><span class="k">Answer quality</span><span class="val">${qLabel(r.quality)}</span><span class="qbar" aria-hidden="true"><i style="width:${qPct(r.quality)}%"></i></span></div>
+    </li>`;
+  }).join('') : '<li class="pick none">Nothing runs at a usable speed on this computer. The smallest models still load, but answers would crawl.</li>';
+}
+
+function cellHTML(r, best) {
+  if (!r.fits) return `<td class="cell v-nofit"><span class="c-no">Won’t fit</span><span class="c-mem">needs ${gb(r.n.total)}</span></td>`;
+  const isBest = best && r === best;
+  return `<td class="cell v-${r.v}${isBest ? ' best' : ''}"><span class="c-speed">${tpsTxt(r.tps)}<small> tok/s</small></span><span class="c-mem">${gb(r.n.total)}</span><span class="qbar" aria-hidden="true"><i style="width:${qPct(r.quality)}%"></i></span><span class="sr">${VERDICT[r.v]}, answer quality ${qLabel(r.quality)}</span>${isBest ? '<span class="c-tag">Best pick</span>' : ''}</td>`;
+}
+
+function renderMatrix(c, opts, best) {
+  const key = new Map(opts.map(r => [r.m.name + '|' + r.q, r]));
+  const models = allModels().slice().sort((a, b) => a.params - b.params);
+  const shown = models.filter(m => opts.some(r => r.m === m && r.fits));
+  const head = `<thead><tr><th scope="col">Model</th>${Object.keys(QUANTS).map(q => `<th scope="col"><b>${QHEAD[q][0]}</b>${QHEAD[q][1]}</th>`).join('')}</tr></thead>`;
+  const body = shown.length ? shown.map(m => {
+    const cells = m.fixed != null
+      ? cellHTML(key.get(m.name + '|native'), best) + '<td class="cell na" colspan="3">Only released in its own 4-bit format</td>'
+      : Object.keys(QUANTS).map(q => cellHTML(key.get(m.name + '|' + q), best)).join('');
+    return `<tr><th scope="row"><span class="rn">${esc(m.name)}</span><span class="rs">${esc(m.size)}</span></th>${cells}</tr>`;
+  }).join('') : '<tr><th scope="row">Nothing fits</th><td class="cell na" colspan="4">No model fits in this computer’s memory at any compression.</td></tr>';
+  $('#matrix').innerHTML = head + `<tbody>${body}</tbody>`;
+  const hidden = models.length - shown.length;
+  $('#matrixFoot').textContent = hidden ? `${hidden} larger model${hidden > 1 ? 's don’t' : ' doesn’t'} fit at any compression, so ${hidden > 1 ? 'they’re' : 'it’s'} left out here. The full list below still shows ${hidden > 1 ? 'them' : 'it'}.` : '';
+  $('#matrixLegend').innerHTML = [['ok-soft', 'Runs well, 15+ tokens/s'], ['fast-soft', 'Usable, 6 to 15'], ['slow-soft', 'Slow, 3 to 6'], ['over-soft', 'Too slow, under 3']]
+    .map(([k, v]) => `<li><span class="sw" style="background:var(--${k})"></span>${v}</li>`).join('')
+    + '<li><span class="qbar"><i style="width:60%"></i></span>Answer quality</li>';
+}
+
+function setupText(best) {
+  if (!S.ready) return '';
+  if (!best) return '<b>Suggested setup:</b> try a small model with Ollama to get a feel for it, but plan on a machine with a 16 to 24 GB graphics card or a 32 GB+ Apple silicon Mac for real office use.';
+  const n = esc(best.m.name);
+  if (S.mode === 'unified') return `<b>Suggested setup:</b> run ${n} in LM Studio or Ollama, and put Open WebUI in front so colleagues get a ChatGPT-style page in their browser.`;
+  if (S.users > 4 && best.where === 'gpu') return `<b>Suggested setup:</b> for ${S.users} people at once, serve ${n} with vLLM, which handles many parallel chats well, with Open WebUI in front as the chat page.`;
+  if (best.where === 'cpu') return `<b>Suggested setup:</b> Ollama can serve ${n} on the processor, with Open WebUI in front. Expect it to suit one or two people at a time.`;
+  return `<b>Suggested setup:</b> Ollama can serve ${n}; add Open WebUI in front and everyone on the office network gets a ChatGPT-style page with accounts and chat history.`;
+}
+
+function joinList(a) {
+  if (a.length <= 1) return a.join('');
+  return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+}
+
+function detailHTML(r, c) {
+  const { m, n } = r;
+  const out = [];
+  const people = S.users === 1 ? 'one person' : `${S.users} people`;
+  out.push(`<p><b>Memory:</b> ${gb(n.weights)} for the model, ${gb(n.kv)} of chat memory for ${people} at ${CTX[S.ctx]}, and ${gb(n.overhead)} of working space.</p>`);
+  let where;
+  if (!r.fits) {
+    where = `It needs about ${gb(n.total - c.cap)} more than this computer has.`;
+    if (!m.fixed && S.quant !== 'q4') where += ' Q4 compression would shrink it.';
+    else if (S.users > 1 || S.ctx > 8192) where += ' Fewer people or shorter conversations would help.';
+  } else if (r.where === 'gpu') where = S.gpuCount > 1 ? `Runs entirely on the graphics cards, spread across ${S.gpuCount} of them.` : 'Runs entirely on the graphics card, the fastest setup.';
+  else if (r.where === 'unified') where = 'Runs entirely in unified memory on the GPU.';
+  else if (r.where === 'split') where = `About ${Math.round(r.gpuFrac * 100)}% of the model fits on the graphics card. The rest runs from system RAM, which is what slows it down.`;
+  else where = c.kind === 'gpu' ? 'The graphics card is too small to help much, so it runs on the processor from system RAM.' : 'Runs on the processor from system RAM.';
+  out.push(`<p><b>Where it runs:</b> ${where}</p>`);
+  if (r.fits) out.push(`<p><b>Speed:</b> about ${tpsTxt(r.tps)} tokens a second for one person. With several people at once, each reply slows a little but total output goes up.</p>`);
+  const dl = n.weights;
+  out.push(`<p><b>Download:</b> about ${gb(dl / GIB)}${m.fixed ? '' : ` at ${QUANTS[S.quant].label.split(',')[0]}`}.</p>`);
+  if (S.diskFree != null && dl / GIB > S.diskFree - 2) out.push(`<p class="warn">The system drive only has ${S.diskFree} GB free, which isn’t enough for this download.</p>`);
+  if (m.note) out.push(`<p>${esc(m.note)}</p>`);
+  return out.join('');
+}
+
+function renderList(c, rows) {
+  const dom = Math.max(c.cap * 1.3, 6);
+  const vis = rows.filter(r => (S.filter === 'all' || r.m.tags.includes(S.filter)) && (!S.fitOnly || r.fits));
+  $('#list').innerHTML = vis.length ? vis.map((r, i) => {
+    const m = r.m, open = S.open.has(m.name), id = 'md' + i;
+    const tags = m.tags.filter(t => TAGS[t]).map(t => `<span class="tag">${TAGS[t]}</span>`).join('');
+    const label = `${m.name} needs ${gb(r.n.total)}; this computer has ${gb(c.cap)} usable.`;
+    return `<li class="m v-${r.v}">
+      <div class="m-name"><button type="button" class="m-btn" aria-expanded="${open}" aria-controls="${id}" data-name="${esc(m.name)}"><span class="nm">${esc(m.name)}</span><span class="sz">${esc(m.size)}, ${esc(m.maker)}</span></button><div class="tags">${tags}</div></div>
+      <div class="m-bar" role="img" aria-label="${esc(label)}">${zones(c, dom)}${fills(r.n.total, c, dom)}</div>
+      <div class="m-need">${gb(r.n.total)}</div>
+      <div class="m-speed">${r.fits ? `${tpsTxt(r.tps)} <small>tok/s</small><span class="where">${WHERE[r.where]}</span>` : '<span class="dash">–</span>'}</div>
+      <div class="m-v"><span class="pill p-${r.v}">${VERDICT[r.v]}</span></div>
+      <div class="m-detail" id="${id}"${open ? '' : ' hidden'}>${detailHTML(r, c)}</div>
+    </li>`;
+  }).join('') : '<li class="empty">No models match. Turn off a filter, or add your own model below.</li>';
+
+  const L = c.kind === 'gpu'
+    ? [['f-fast', 'Fits in graphics memory'], ['f-slow', 'Spills into system RAM'], ['f-over', 'More than this computer has']]
+    : c.kind === 'unified'
+      ? [['f-fast', 'Fits in unified memory'], ['f-over', 'More than this computer has']]
+      : [['f-slow', 'Fits in system RAM'], ['f-over', 'More than this computer has']];
+  $('#listLegend').innerHTML = L.map(([k, v]) => `<li><span class="sw" style="background:var(--${k === 'f-fast' ? 'fast' : k === 'f-slow' ? 'slow' : 'over'})"></span>${v}</li>`).join('');
+}
+
+function renderSupply(c, opts) {
+  const models = allModels().slice().sort((a, b) => a.params - b.params);
+  const rows = models.map(m => {
+    const smallest = opts.find(r => r.m === m && (r.q === 'q4' || r.q === 'native'));
+    const pick = smallest && smallest.fits ? smallest : null;
+    return { m, s: supplyFor(m), pick, smallest };
+  });
+  const shown = S.supplyFit ? rows.filter(r => r.pick) : rows;
+
+  const head = `<thead>
+    <tr class="grp"><th></th><th></th><th class="g" colspan="3">Download the model</th><th class="g" colspan="2">Run it in the cloud</th><th></th></tr>
+    <tr><th scope="col"><b>Model</b></th><th scope="col"><b>This computer</b>At Q4 compression</th>${SOURCES.map(x => `<th scope="col"><b>${x.name}</b>${x.owner}</th>`).join('')}<th scope="col"><b>Without Hugging Face</b>Other sources</th></tr>
+  </thead>`;
+  const cell = (src, s, m) => {
+    const v = s[src.k] || ['check'];
+    const label = STATUS[v[0]];
+    return `<td><a class="st s-${v[0]}" href="${src.url(s)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(`${m.name} on ${src.name}: ${label}${v[1] ? ', ' + v[1] : ''}. Opens the listing.`)}"><span class="dot"></span><span class="stl">${label}</span></a>${v[1] ? `<span class="snote">${esc(v[1])}</span>` : ''}</td>`;
+  };
+  const body = shown.length ? shown.map(({ m, s, pick, smallest }) => {
+    const pc = pick
+      ? `<span class="pill p-${pick.v}">${VERDICT[pick.v]}</span><small>${tpsTxt(pick.tps)} tok/s, ${gb(pick.n.total)}</small>`
+      : `<span class="pill p-nofit">${VERDICT.nofit}</span><small>needs ${gb(smallest.n.total)}</small>`;
+    const [cls, lab, note] = independence(s);
+    return `<tr><th scope="row"><span class="rn">${esc(m.name)}</span><span class="rs">${esc(m.size)}</span></th><td class="pcfit">${pc}</td>${SOURCES.map(x => cell(x, s, m)).join('')}<td><span class="ind ${cls}">${lab}</span><span class="ind-note">${note}</span></td></tr>`;
+  }).join('') : '<tr><td colspan="8">No model fits on this computer. Turn off the filter to see them all.</td></tr>';
+  $('#supplyTable').innerHTML = head + `<tbody>${body}</tbody>`;
+
+  const fitN = rows.filter(r => r.pick).length;
+  const hfOnly = rows.filter(r => independence(r.s)[0] === 'none').map(r => r.m.name);
+  const count = (k, st) => rows.filter(r => r.s[k] && r.s[k][0] === st).length;
+  const cloudTxt = k => `<b>${count(k, 'yes')}</b> confirmed` + (count(k, 'likely') ? ` and ${count(k, 'likely')} likely` : '');
+  $('#supplySum').innerHTML = `<b>${fitN} of ${rows.length}</b> models fit on this computer. Microsoft Foundry has ${cloudTxt('fd')}; Amazon Bedrock has ${cloudTxt('br')}.` +
+    (hfOnly.length ? ` <b>${esc(joinList(hfOnly))}</b> ${hfOnly.length > 1 ? 'are' : 'is'} only on Hugging Face.` : '');
+  $('#supplyLegend').innerHTML = Object.entries(STATUS).map(([k, v]) => `<li class="s-${k}"><span class="dot"></span>${{
+    yes: 'Yes: listed', likely: 'Likely: family or publisher listed, this size not confirmed', cloud: 'Cloud only: no download',
+    community: 'Community upload: not from the model’s maker', no: 'Not listed', check: 'Check: not verified yet' }[k]}</li>`).join('');
+}
+
+function renderResults() {
+  const c = capacity();
+  const opts = evalAll(c);
+  const best = pickBest(opts, c);
+  renderHero(c, opts, best);
+  renderPicks(c, opts, best);
+  renderMatrix(c, opts, best);
+  renderSupply(c, opts);
+  const rows = opts.filter(r => r.q === S.quant || r.q === 'native').sort((a, b) => a.n.total - b.n.total);
+  renderList(c, rows);
+}
+
+function setVal(sel, v) { const el = $(sel); if (document.activeElement !== el) el.value = v; }
+
+function ensureRamOption() {
+  const sel = $('#ramBw');
+  $$('option[data-extra]', sel).forEach(o => o.remove());
+  const exists = [...sel.options].some(o => o.value === String(S.ramBw));
+  if (S.ramMhz || !exists) {
+    const o = document.createElement('option');
+    o.value = String(S.ramBw); o.dataset.extra = '1';
+    o.textContent = S.ramMhz ? `From your RAM speed, about ${S.ramBw} GB/s` : `About ${S.ramBw} GB/s`;
+    sel.prepend(o);
+  }
+  sel.value = String(S.ramBw);
+}
+
+function renderForm() {
+  $$('#mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === S.mode)));
+  $$('[data-show]').forEach(el => { el.hidden = !el.dataset.show.split(' ').includes(S.mode); });
+  $('#modeHint').textContent = S.mode === 'unified' ? 'Apple silicon Macs, NVIDIA DGX Spark and AMD Ryzen AI Max machines share one pool of memory between processor and GPU.'
+    : S.mode === 'cpu' ? 'Integrated graphics shares system RAM, so it’s treated the same as no graphics card.' : '';
+  setVal('#gpuName', S.gpuName);
+  setVal('#vram', S.vram || '');
+  setVal('#gpuCount', S.gpuCount);
+  setVal('#gpuBw', S.gpuBw || '');
+  setVal('#ram', S.ram);
+  ensureRamOption();
+  $('#gpuNameLabel').textContent = S.mode === 'unified' ? 'Chip' : 'Graphics card';
+  $('#gpuName').placeholder = S.mode === 'unified' ? 'e.g. Apple M4 Pro' : 'Start typing, e.g. RTX 4090';
+  $('#ramLabel').textContent = S.mode === 'unified' ? 'Unified memory (GB)' : 'System RAM (GB)';
+  $$('[data-src]').forEach(el => {
+    let v = S.src[el.dataset.src];
+    if (el.dataset.src === 'vram' && S.mode === 'gpu' && !S.vram) v = 'unknown';
+    el.className = 'src ' + (v || '');
+    el.textContent = SRC_LABEL[v] || '';
+    el.hidden = !v;
+  });
+  const vn = $('#vramNote');
+  vn.textContent = S.vramNote;
+  if (!S.vramNote) vn.hidden = true;
+
+  $('#usersOut').textContent = S.users;
+  setVal('#users', S.users);
+  $('#ctx').value = String(S.ctx);
+  $$('#quantSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.q === S.quant)));
+  $('#quantNote').textContent = QUANTS[S.quant].note;
+  $$('#lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
+
+  const s = S.seen;
+  const rows = [];
+  if (s.cmd) rows.push(['From the command', [s.cmd.cpu, s.cmd.os].filter(Boolean).join(', ') || 'Read']);
+  rows.push(['Graphics', s.gpu || 'Not shown']);
+  rows.push(['Memory', s.mem || 'Not shown']);
+  rows.push(['Processor threads', s.threads || 'Not shown']);
+  rows.push(['System', s.os || 'Unknown']);
+  rows.push(['WebGPU', s.webgpu || 'Not available']);
+  if (S.diskFree != null) rows.push(['Free disk space', S.diskFree + ' GB']);
+  $('#seen').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  $('#notes').innerHTML = S.notes.map(n => `<p class="note">${esc(n)}</p>`).join('');
+}
+
+function update() { renderForm(); renderResults(); }
+
+/* ---------- Detection ---------- */
+async function detect() {
+  const seen = S.seen;
+  const threads = navigator.hardwareConcurrency;
+  seen.threads = threads ? String(threads) : '';
+
+  const dm = navigator.deviceMemory;
+  if (typeof dm === 'number' && dm > 0 && dm < 8) { S.ram = dm; S.src.ram = 'detected'; seen.mem = dm + ' GB'; }
+  else {
+    S.ram = 16; S.src.ram = 'assumed';
+    seen.mem = typeof dm === 'number' ? '8 GB or more (browsers stop counting at 8)' : 'Not shown by this browser';
+  }
+
+  let renderer = '';
+  try {
+    const cv = document.createElement('canvas');
+    const gl = cv.getContext('webgl2') || cv.getContext('webgl');
+    if (gl) {
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      renderer = (ext && gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || '';
+    }
+  } catch (e) { /* ignore */ }
+
+  try {
+    if (navigator.gpu) {
+      const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      if (a) {
+        let info = a.info;
+        if (!info && a.requestAdapterInfo) info = await a.requestAdapterInfo();
+        info = info || {};
+        const bits = [info.vendor, info.architecture].filter(Boolean).join(', ');
+        seen.webgpu = 'Available' + (bits ? ` (${bits})` : '');
+      }
+    }
+  } catch (e) { /* ignore */ }
+
+  let os = '';
+  try {
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      const h = await navigator.userAgentData.getHighEntropyValues(['platform', 'platformVersion', 'architecture']);
+      os = h.platform || '';
+      if (os === 'Windows' && h.platformVersion) os = parseInt(h.platformVersion, 10) >= 13 ? 'Windows 11' : 'Windows 10';
+      if (h.architecture) os += h.architecture === 'arm' ? ' on ARM' : ' on x86';
+    }
+  } catch (e) { /* ignore */ }
+  if (!os) {
+    const ua = navigator.userAgent;
+    os = /Windows/.test(ua) ? 'Windows' : /Macintosh|Mac OS X/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : '';
+  }
+  seen.os = os;
+
+  const n = norm(renderer);
+  const vague = /or similar/i.test(renderer);
+  const pretty = prettyGpu(renderer);
+  seen.gpu = renderer ? pretty + (vague ? ' (this browser hides the exact model)' : '') : '';
+  const match = renderer ? lookupGpu(renderer) : null;
+
+  if (match && match.kind === 'u') {
+    S.mode = 'unified'; S.gpuName = match.name; S.gpuBw = match.bw;
+    S.src.gpu = vague ? 'assumed' : 'detected'; S.src.bw = 'lookup';
+    if (match.vram > 0) S.ram = match.vram;
+  } else if (match) {
+    S.mode = 'gpu'; S.gpuName = match.name; S.vram = match.vram; S.gpuBw = match.bw;
+    S.src.gpu = vague ? 'assumed' : 'detected';
+    S.src.vram = match.note ? 'assumed' : 'lookup';
+    S.vramNote = match.note || ''; S.src.bw = 'lookup';
+  } else if (/swiftshader|llvmpipe|softpipe|basic render|software/.test(n)) {
+    S.mode = 'cpu';
+    S.notes.push('This browser is drawing graphics in software, so it couldn’t see the graphics card. If the computer has one, choose “Graphics card” and type its name.');
+  } else if (/ apple gpu /.test(n)) {
+    S.mode = 'unified'; S.gpuName = ''; S.gpuBw = 100; S.src.gpu = 'unknown'; S.src.bw = 'assumed';
+    S.notes.push('This browser doesn’t say which Apple chip this is. Pick it in the Chip box for a better speed estimate.');
+  } else if (/(nvidia|geforce|quadro|tesla| rx \d|radeon pro|firepro)/.test(n)) {
+    S.mode = 'gpu'; S.gpuName = pretty; S.vram = 0; S.gpuBw = 300;
+    S.src.gpu = 'detected'; S.src.bw = 'assumed';
+  } else {
+    S.mode = 'cpu';
+  }
+  S.ready = true;
+}
+
+/* ---------- Command output ---------- */
+function applyOutput(text) {
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a < 0 || b <= a) throw new Error('shape');
+  const d = JSON.parse(text.slice(a, b + 1));
+  if (typeof d.ram_gb !== 'number' || !(d.ram_gb > 0)) throw new Error('shape');
+
+  S.ram = Math.round(d.ram_gb * 10) / 10; S.src.ram = 'script';
+  S.seen.cmd = { cpu: d.cpu || '', os: d.os || '' };
+  if (d.threads) S.seen.threads = String(d.threads) + (d.cores ? ` (${d.cores} cores)` : '');
+  if (typeof d.disk_free_gb === 'number') S.diskFree = d.disk_free_gb;
+  if (d.ram_mhz > 0) { S.ramMhz = d.ram_mhz; S.ramBw = Math.round(clamp(d.ram_mhz * 16 / 1000, 20, 200)); }
+
+  let gpus = Array.isArray(d.gpus) ? d.gpus : d.gpus ? [d.gpus] : [];
+  gpus = gpus.filter(g => g && g.name).map(g => ({ name: String(g.name), vram: +g.vram_gb || 0, m: lookupGpu(g.name) }));
+  const uni = gpus.find(g => g.m && g.m.kind === 'u');
+  const dedicated = gpus.filter(g => (g.m && g.m.kind === 'd') ||
+    (!g.m && g.vram >= 3 && !INTEGRATED.test(norm(g.name)) && !/basic|remote|virtual|parsec|citrix|idd/i.test(g.name)));
+  const chip = lookupGpu(d.cpu || '');
+  S.notes = []; S.vramNote = '';
+
+  if (uni) {
+    S.mode = 'unified'; S.gpuName = uni.m.name; S.gpuBw = uni.m.bw; S.src.gpu = 'script'; S.src.bw = 'lookup';
+  } else if (dedicated.length) {
+    const vr = g => g.vram || (g.m ? g.m.vram : 0);
+    dedicated.sort((x, y) => vr(y) - vr(x));
+    const top = dedicated[0];
+    const mixed = dedicated.some(g => g.name !== top.name);
+    S.mode = 'gpu';
+    S.gpuName = top.m ? top.m.name : top.name;
+    S.gpuCount = dedicated.length;
+    S.vram = Math.round(dedicated.reduce((s, g) => s + vr(g), 0) / dedicated.length * 10) / 10;
+    S.gpuBw = Math.min(...dedicated.map(g => g.m ? g.m.bw : 300));
+    S.src.gpu = 'script'; S.src.vram = top.vram ? 'script' : 'lookup'; S.src.bw = top.m ? 'lookup' : 'assumed';
+    if (mixed) S.vramNote = 'These are different cards, so memory per card is shown as their average.';
+  } else if (chip && chip.kind === 'u') {
+    S.mode = 'unified'; S.gpuName = chip.name; S.gpuBw = chip.bw; S.src.gpu = 'script'; S.src.bw = 'lookup';
+  } else {
+    S.mode = 'cpu'; S.gpuName = ''; S.vram = 0;
+  }
+  if (!S.seen.cmd.cpu && !S.seen.cmd.os) S.seen.cmd.cpu = 'Read';
+  if (d.ram_mhz > 0 && S.mode !== 'unified') S.notes.push('Speeds assume two RAM sticks working together (dual channel). With only one stick, expect about half. Task Manager shows this under Performance, Memory, “Slots used”.');
+}
+
+/* ---------- Wiring ---------- */
+function init() {
+  $('#gpuList').innerHTML = GPU_DB.map(g => `<option value="${esc(g.name)}"></option>`).join('');
+  $('#quantSeg').innerHTML = Object.keys(QUANTS).map(k => `<button type="button" data-q="${k}">${QHEAD[k][0]}</button>`).join('');
+  $('#chips').innerHTML = [['all', 'All'], ['chat', 'Chat'], ['code', 'Coding'], ['reasoning', 'Reasoning'], ['vision', 'Reads images'], ['zh', 'Chinese']]
+    .map(([k, v]) => `<button type="button" class="chip" data-f="${k}" aria-pressed="${k === 'all'}">${v}</button>`).join('');
+
+  $('#mode').addEventListener('click', e => {
+    const b = e.target.closest('button[data-mode]'); if (!b) return;
+    const mode = b.dataset.mode; if (mode === S.mode) return;
+    const cur = lookupGpu(S.gpuName);
+    if (mode === 'unified' && !(cur && cur.kind === 'u')) { S.gpuName = ''; S.gpuBw = 100; S.src.gpu = 'unknown'; S.src.bw = 'assumed'; }
+    if (mode === 'gpu' && (!cur || cur.kind === 'u')) { S.gpuName = ''; S.vram = 0; S.gpuBw = 300; S.src.gpu = 'unknown'; S.src.vram = ''; S.src.bw = 'assumed'; S.vramNote = ''; }
+    S.mode = mode; update();
+  });
+
+  const applyGpuName = (v, force) => {
+    const m = lookupGpu(v);
+    const exact = m && (m.name.toLowerCase() === v.trim().toLowerCase());
+    if (!force && !exact) { S.gpuName = v; return false; }
+    S.gpuName = m ? m.name : v; S.src.gpu = 'edited';
+    if (m) {
+      S.gpuBw = m.bw; S.src.bw = 'lookup';
+      if (m.kind === 'u') { S.mode = 'unified'; if (m.vram) { S.ram = m.vram; S.src.ram = 'lookup'; } }
+      else { S.mode = 'gpu'; S.vram = m.vram; S.vramNote = m.note || ''; S.src.vram = m.note ? 'assumed' : 'lookup'; }
+    }
+    return true;
+  };
+  $('#gpuName').addEventListener('input', e => { if (applyGpuName(e.target.value, false)) update(); });
+  $('#gpuName').addEventListener('change', e => { applyGpuName(e.target.value, true); update(); });
+
+  $('#vram').addEventListener('input', e => { S.vram = Math.max(0, parseFloat(e.target.value) || 0); S.src.vram = 'edited'; S.vramNote = ''; update(); });
+  $('#gpuCount').addEventListener('input', e => { S.gpuCount = clamp(parseInt(e.target.value, 10) || 1, 1, 8); update(); });
+  $('#gpuBw').addEventListener('input', e => { S.gpuBw = Math.max(0, parseFloat(e.target.value) || 0); S.src.bw = 'edited'; update(); });
+  $('#ram').addEventListener('input', e => { const v = parseFloat(e.target.value); if (v > 0) { S.ram = v; S.src.ram = 'edited'; update(); } });
+  $('#ramBw').addEventListener('change', e => { S.ramBw = parseFloat(e.target.value) || 50; if (!e.target.selectedOptions[0].dataset.extra) S.ramMhz = 0; update(); });
+  $('#users').addEventListener('input', e => { S.users = parseInt(e.target.value, 10) || 1; update(); });
+  $('#ctx').addEventListener('change', e => { S.ctx = parseInt(e.target.value, 10); update(); });
+  $('#quantSeg').addEventListener('click', e => { const b = e.target.closest('button[data-q]'); if (!b) return; S.quant = b.dataset.q; update(); });
+  $('#lang').addEventListener('click', e => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; update(); });
+  $('#fitOnly').addEventListener('change', e => { S.fitOnly = e.target.checked; renderResults(); });
+  $('#supplyFit').addEventListener('change', e => { S.supplyFit = e.target.checked; renderResults(); });
+
+  $('#chips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    S.filter = b.dataset.f;
+    $$('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+    renderResults();
+  });
+
+  $('#list').addEventListener('click', e => {
+    const b = e.target.closest('.m-btn'); if (!b) return;
+    const name = b.dataset.name, open = b.getAttribute('aria-expanded') !== 'true';
+    open ? S.open.add(name) : S.open.delete(name);
+    b.setAttribute('aria-expanded', String(open));
+    const d = document.getElementById(b.getAttribute('aria-controls'));
+    if (d) d.hidden = !open;
+  });
+
+  // Command tabs
+  const scripts = { win: $('#ps-script').textContent.trim(), nix: $('#sh-script').textContent.trim() };
+  const showTab = k => {
+    $('#tab-win').setAttribute('aria-selected', String(k === 'win'));
+    $('#tab-nix').setAttribute('aria-selected', String(k === 'nix'));
+    $('#code').textContent = scripts[k];
+    $('#code').setAttribute('aria-labelledby', 'tab-' + k);
+    $('#copyStatus').textContent = '';
+  };
+  $('#tab-win').addEventListener('click', () => showTab('win'));
+  $('#tab-nix').addEventListener('click', () => showTab('nix'));
+  showTab(/Mac|Linux|X11/.test(navigator.userAgent) && !/Windows/.test(navigator.userAgent) ? 'nix' : 'win');
+
+  $('#copy').addEventListener('click', async () => {
+    const st = $('#copyStatus');
+    try { await navigator.clipboard.writeText($('#code').textContent + '\n'); st.textContent = 'Copied. Paste it into the terminal; if it waits, press Enter.'; }
+    catch (err) {
+      const r = document.createRange(); r.selectNodeContents($('#code'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      st.textContent = 'Selected. Press Ctrl+C (⌘C on a Mac) to copy.';
+    }
+  });
+
+  $('#apply').addEventListener('click', () => {
+    const st = $('#applyStatus');
+    try {
+      applyOutput($('#paste').value);
+    } catch (err) {
+      st.className = 'status bad';
+      st.textContent = 'That doesn’t look like the command’s output. Paste everything it printed, from the first { to the last }.';
+      return;
+    }
+    st.className = 'status'; st.textContent = 'Updated with the exact numbers from this computer.';
+    update();
+    try { $('#verdict').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
+  });
+
+  $('#noticeBtn').addEventListener('click', () => {
+    const d = $('#exact'); d.open = true;
+    try { d.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+  });
+
+  $('#addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#cName').value.trim();
+    const p = parseFloat($('#cParams').value);
+    let a = parseFloat($('#cActive').value);
+    if (!name || !(p > 0)) return;
+    if (!(a > 0) || a > p) a = p;
+    S.custom = S.custom.filter(m => m.name !== name);
+    S.custom.push({ name, maker: 'added by you', size: a < p ? `${p}B, ${a}B active` : `${p}B`, params: p, active: a,
+      kv: Math.round(50 * Math.pow(p, 0.45)), tags: ['custom'], tier: Math.round(40 + 7 * Math.log2(Math.max(p, 0.5))), custom: true,
+      note: 'Chat memory and answer quality for this model are estimated from its size, so treat them as rough figures.' });
+    e.target.reset();
+    S.filter = 'all'; $$('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.f === 'all')));
+    renderResults();
+  });
+
+  update();
+  detect().then(update, () => { S.ready = true; update(); });
+}
+
+init();
+})();
+</script>
+</body>
+</html>
